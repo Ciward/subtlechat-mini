@@ -26,9 +26,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 /**
- * 爬虫
+ * 爬虫, 估计用不到了
  */
 @Component
 @Slf4j
@@ -94,7 +93,7 @@ public class CrawlerConfig {
         noticeService.saveBatch(notices);
         log.info("爬虫结束");
     }
-
+    
     public static void main(String[] args) {
         String url = "https://jsjxsgz.qd.sdu.edu.cn/zytz.htm";
         log.info("爬虫开始");
