@@ -1,6 +1,8 @@
 package top.javahai.chatroom.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.binarywang.java.emoji.EmojiConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -17,7 +19,9 @@ import top.javahai.chatroom.service.NoticeService;
 import top.javahai.chatroom.utils.NlpUtil;
 import top.javahai.chatroom.utils.TuLingUtil;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -184,6 +188,75 @@ public class WsController {
       }
       //回送机器人回复的消息给发送者
       simpMessagingTemplate.convertAndSendToUser(message.getFrom(),"/queue/robot",resultMessage);
+    }
+
+       /**
+     * 接受前端发来的消息，调用python接口并转发回给发送者
+     * @param authentication
+     * @param message
+     * @throws IOException
+     */
+    @MessageMapping("/ws/fileChat")
+    public void handleFileChatMessage(Authentication authentication, Message message) throws IOException {
+      User user = ((User) authentication.getPrincipal());
+      //接收到的消息
+      message.setFrom(user.getUsername());
+      message.setCreateTime(new Date());
+      message.setFromNickname(user.getNickname());
+      message.setFromUserProfile(user.getUserProfile());
+      
+      try {
+        // 构建命令：调用 Python 解释器执行脚本
+        ProcessBuilder processBuilder = new ProcessBuilder("python", "path/to/script.py",message.getContent());
+        Process process = processBuilder.start();
+
+        // 获取脚本输出流
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        StringBuilder output = new StringBuilder();
+        String line;
+        
+        // 读取 Python 脚本的输出
+        while ((line = reader.readLine()) != null) {
+            output.append(line);
+        }
+        // 等待进程结束
+        process.waitFor();
+
+        // 解析 JSON 字符串
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = objectMapper.readTree(output.toString());
+
+        // 处理 JSON 数据
+        System.out.println("query" + jsonNode.get("query").asText());
+        JsonNode referenceNode = jsonNode.get("reference");
+        List<JsonNode> refList = new ArrayList<>();
+        List<String> texList = new ArrayList<>();
+        List<String> fileList = new ArrayList<>();
+        if (referenceNode.isArray()) {
+          for (JsonNode node : referenceNode) {
+              refList.add(node);
+              texList.add(node.get("text").asText());
+              fileList.add(node.get("file_name").asText());
+          }
+        }
+      
+        Message resultMessage = new Message();           //创建一个新的Message对象，并设置其一些基本属性，比如发送者（小智）、创建时间（当前时间）以及发送者昵称（也是小智）。
+        resultMessage.setFrom("小智");
+        resultMessage.setCreateTime(new Date());
+        resultMessage.setFromNickname("小智");
+        
+        String message1 = new String();
+        
+        String tex = String.join("", texList);  // 使用空字符串作为分隔符
+        String files = String.join("", fileList);  // 使用空字符串作为分隔符
+        resultMessage.setContent(tex+'\n'+'来源:'+files);
+
+        // //回送机器人回复的消息给发送者
+        simpMessagingTemplate.convertAndSendToUser(message.getFrom(),"/queue/robot",resultMessage);
+    
+      } catch (Exception e) {
+          e.printStackTrace();
+      }
 
 
   }

@@ -35,7 +35,7 @@ public class CrawlerConfig {
 
     @Autowired
     private NoticeService noticeService;
-
+    /*
     public static Document newsHome(String url){
 
         CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -68,6 +68,7 @@ public class CrawlerConfig {
 
     @PostConstruct
     public void job(){
+        
         String url = "https://jsjxsgz.qd.sdu.edu.cn/zytz.htm";
         log.info("爬虫开始");
         QueryWrapper<Notice> queryWrapper = new QueryWrapper<>();
@@ -86,7 +87,7 @@ public class CrawlerConfig {
                 Notice notice = new Notice();
                 notice.setTitle(a);
                 notice.setUrl("https://jsjxsgz.qd.sdu.edu.cn/"+href);
-                notice.setCreateTime(new Date());
+                notice.setDate(new Date());
                 notices.add(notice);
             }
         }
@@ -95,6 +96,7 @@ public class CrawlerConfig {
     }
     
     public static void main(String[] args) {
+
         String url = "https://jsjxsgz.qd.sdu.edu.cn/zytz.htm";
         log.info("爬虫开始");
         Document document = newsHome(url);
@@ -110,4 +112,5 @@ public class CrawlerConfig {
         }
         log.info("爬虫结束");
     }
+    */
 }
