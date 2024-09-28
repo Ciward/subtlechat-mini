@@ -24,4 +24,5 @@ public class Notice implements Serializable {
     private String title;
     private String url;
     private Date date;
+    private String content;
 }
