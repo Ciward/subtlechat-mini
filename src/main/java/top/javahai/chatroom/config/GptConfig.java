@@ -101,7 +101,4 @@ public static String getToken() {
         return result;
     }
 
-    public static void main(String[] args) {
-
-    }
 }
