@@ -32,7 +32,7 @@ public class HttpUtils {
         httpPost.setHeader("Content-type", "application/json");
 //        httpPost.setHeader("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
         httpPost.setHeader("Accept", "application/json");
-
+        
         //执行请求操作，并拿到结果（同步阻塞）
         CloseableHttpResponse response = client.execute(httpPost);
         //获取结果实体

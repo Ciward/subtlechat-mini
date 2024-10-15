@@ -7,11 +7,16 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.binarywang.java.emoji.EmojiConverter;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
 import top.javahai.chatroom.config.GptConfig;
 import top.javahai.chatroom.dao.QuestionDao;
 import top.javahai.chatroom.entity.GroupMsgContent;
@@ -211,7 +216,7 @@ public class WsController {
      * @param message
      * @throws IOException
      */
-    @MessageMapping("/ws/RAGquery")
+    @MessageMapping("/ws/RAGchat")
     public void handleRAGqueryMessage(Authentication authentication, Message message) throws IOException {
       User user = ((User) authentication.getPrincipal());
       //接收到的消息
@@ -227,44 +232,18 @@ public class WsController {
       
       try {
         // 构建请求体
-        String queryParam = message.getContent();
-        String encodedQuery = URLEncoder.encode(queryParam,"UTF-8");
-        String postResponse = HttpUtils.httpPost("http://localhost:1145/query?query=" + encodedQuery);
-        System.out.println("POST Response: " + postResponse);
-        // 解析JSON字符串
+        JSONObject jsonObject = GptConfig.RAGchat(message.getContent());
+        // 解析JSON
         ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(postResponse);
-
-        // 处理JSON数据
-        System.out.println("query: " + jsonNode.get("query").asText());
-        JsonNode referenceNode = jsonNode.get("reference");
-        List<JsonNode> refList = new ArrayList<>();
-        List<String> texList = new ArrayList<>();
-        List<String> fileList = new ArrayList<>();
-        if (referenceNode.isArray()) {
-            for (JsonNode node : referenceNode) {
-                refList.add(node);
-                texList.add(node.get("text").asText());
-                fileList.add(node.get("file_name").asText());
-            }
-        }
-      
-        Message resultMessage = new Message();           //创建一个新的Message对象，并设置其一些基本属性，比如发送者（小智）、创建时间（当前时间）以及发送者昵称（也是小智）。
-        resultMessage.setFrom("小智");
-        resultMessage.setCreateTime(new Date());
-        resultMessage.setFromNickname("小智");
         
-        String tex = String.join("", texList);  // 使用空字符串作为分隔符
-        String files = String.join("", fileList);  // 使用空字符串作为分隔符
-        resultMessage.setContent(tex+'\n'+"来源:"+files);
-
-        // //回送机器人回复的消息给发送者
-        simpMessagingTemplate.convertAndSendToUser(message.getFrom(),"/queue/robot",resultMessage);
+        // 处理JSON数据
     
       } catch (Exception e) {
           e.printStackTrace();
       }
     }
+
+
        /**
      * 接受前端发来的消息，调用python接口并转发回给发送者
      * @param authentication
@@ -280,7 +259,7 @@ public class WsController {
       message.setFromNickname(user.getNickname());
       message.setFromUserProfile(user.getUserProfile());
       //questionDao.insert(message);
-      
+
       try {
         // 构建请求体
         String queryParam = message.getContent();
