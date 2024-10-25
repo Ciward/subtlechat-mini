@@ -95,58 +95,7 @@ public class WsController {
     //转发该条数据
     simpMessagingTemplate.convertAndSend("/topic/greetings",groupMsgContent);
   }
-//// OLD CODES
-//  /**
-//   * 接受前端发来的消息，获得图灵机器人回复并转发回给发送者
-//   * @param authentication
-//   * @param message
-//   * @throws IOException
-//   */
-//  @MessageMapping("/ws/robotChat")
-//  public void handleRobotChatMessage(Authentication authentication, Message message) throws IOException {
-//    User user = ((User) authentication.getPrincipal());
-//    //接收到的消息
-//    message.setFrom(user.getUsername());
-//    message.setCreateTime(new Date());
-//    message.setFromNickname(user.getNickname());
-//    message.setFromUserProfile(user.getUserProfile());
-//
-//    // 先拿整个输入信息去数据库查，查不到在分词，如果还查不到，则去问gpt
-//
-//    //先拿整个输入信息去数据库查，查不到调用文心一言来进行分词处理，如果还查不到，则去问gpt
-//    QueryWrapper<Notice> wrapper = new QueryWrapper<>();
-//    wrapper.eq("title",message.getContent());
-//    List<Notice> list = noticeService.list(wrapper);
-//    Message resultMessage = new Message();
-//    resultMessage.setFrom("小智");
-//    resultMessage.setCreateTime(new Date());
-//    resultMessage.setFromNickname("小智");
-//    if(list.size() == 0){
-//      List<String> words = NlpUtil.getWords(message.getContent());
-//        if(words.size() == 0){
-//          String result = GptConfig.getMessage(message.getContent());
-//          resultMessage.setContent(result+"\r\n答案来源：文心一言");
-//        }else {
-//          QueryWrapper<Notice> queryWrapper = new QueryWrapper<>();
-//          for (String word: words){
-//            queryWrapper.like("title",word);
-//          }
-//          List<Notice> list1 = noticeService.list(queryWrapper);
-//          if(list1.size() == 0){
-//            // 调用gpt智能回答
-//            String result = GptConfig.getMessage(message.getContent());
-//            resultMessage.setContent(result+"\r\n回答来源：文心一言");
-//          }else{
-//            resultMessage.setContent(list1.get(0).getTitle()+"\r\n回答来源："+list1.get(0).getUrl());
-//          }
-//        }
-//    }else {
-//      resultMessage.setContent(list.get(0).getTitle()+"\r\n回答来源："+list.get(0).getUrl());
-//      System.out.println(resultMessage.getContent());
-//    }
-//    //回送机器人回复的消息给发送者
-//    simpMessagingTemplate.convertAndSendToUser(message.getFrom(),"/queue/robot",resultMessage);
-// NEW CODES
+
 
     /**
      * 接受前端发来的消息，获得图灵机器人回复并转发回给发送者
@@ -231,8 +180,10 @@ public class WsController {
       questionDao.insert(question);
       
       try {
-        // 构建请求体
-        JSONObject jsonObject = GptConfig.RAGchat(message.getContent());
+        // 构建请求体, 只有检索的文档
+        JSONObject docJsonObject = GptConfig.RAGchatDoc(message.getContent());
+        // 进入大模型请求队列
+        int queue_id = GptConfig.RAGchat(question);
         // 解析JSON
         ObjectMapper objectMapper = new ObjectMapper();
         

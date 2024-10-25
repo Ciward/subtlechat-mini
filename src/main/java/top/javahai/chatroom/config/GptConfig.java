@@ -1,6 +1,8 @@
 package top.javahai.chatroom.config;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+
+import top.javahai.chatroom.entity.Question;
 import top.javahai.chatroom.utils.HttpRequest;
 import top.javahai.chatroom.utils.HttpUtils;
 
@@ -109,7 +111,7 @@ public static String getToken() {
         return result;
     }
 
-    public static JSONObject RAGchat(String content) {
+    public static JSONObject RAGchatDoc(String content) {
         // data = {
         //         "query": "综合评价总分的详细组成？",
         //         "mode": "local_kb",
@@ -134,7 +136,33 @@ public static String getToken() {
         requestBody.put("top_k", 6);
         requestBody.put("score_threshold", 1.0);
         requestBody.put("history", new ArrayList<>());
-        requestBody.put("stream", true);
+        requestBody.put("stream", false);
+        requestBody.put("temperature", 0.7);
+        requestBody.put("max_tokens", 0);
+        requestBody.put("prompt_name", "default");
+        requestBody.put("return_direct", true);
+        String outputStr = JSON.toJSONString(requestBody);
+        JSON json = HttpRequest.httpRequest(url,requestMethod,outputStr,"application/json");
+        JSONObject docJsonObject = JSONObject.parseObject(json.toJSONString());
+        return docJsonObject;
+    }
+    public static int RAGchat(Question question) {
+       // 返回队列信息
+       return 0;
+    }
+    public static JSONObject requestRAGserver(String content) {
+        
+        String requestMethod = "POST";
+        String url = "http://127.0.0.1:1145/chat/kb_chat";//post请求时格式
+        HashMap<String, Object> requestBody = new HashMap<>();
+        requestBody.put("query", content);
+        requestBody.put("model", "custom-glm4-chat");
+        requestBody.put("mode", "local_kb");
+        requestBody.put("kb_name", "campus");
+        requestBody.put("top_k", 6);
+        requestBody.put("score_threshold", 1.0);
+        requestBody.put("history", new ArrayList<>());
+        requestBody.put("stream", false);
         requestBody.put("temperature", 0.7);
         requestBody.put("max_tokens", 0);
         requestBody.put("prompt_name", "default");
@@ -163,10 +191,11 @@ public static String getToken() {
         chatCompletion.setModel("custom-glm4-chat");
         
         ChatCompletionResponse chatCompletionResponse = openAiClient.chatCompletion(chatCompletion);
-        JSONObject jsonObject = new JSONObject();
+        JSONObject docJsonObject = new JSONObject();
+        docJsonObject.put("content", chatCompletionResponse.getChoices().get(0).getMessage().getContent());
         chatCompletionResponse.getChoices().forEach(e -> {
             System.out.println(e.getMessage());
         });
-        return jsonObject;
+        return docJsonObject;
     }
 }
